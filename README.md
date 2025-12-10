@@ -1,63 +1,92 @@
-# **Inversion & Optimisation – Coursework 2**
+# Inversion and Optimisation Assessment
 
-This is the second and final coursework for this module, contributing **50%** of your overall grade. It assesses material covered in **Lectures 1–5 and 9–11**. This is an open-book assessment.
+**Imperial College London**
 
-## **Important Dates**
+**MSc Applied Computational Science and Engineering (ACSE)**
 
-| Event            | Date & Time |
-|-----------------|------------|
-| **Release**     | Wednesday, 26 February, 12:00 (noon) |
-| **Deadline**    | Friday, 28 February, 12:00 (noon) |
+**Module:** Inversion and Optimisation (2024/25)
 
-🚨 **Repositories will be cloned at the deadline. Any work submitted after this time will not be marked.** 
 
 ---
 
-## **Coursework Structure**
-- **Part 1:** Linear Inversion (Lectures 1–4) – **40 marks**
-- **Part 2:** Non-Linear Inversion (Lectures 5, 9–11) – **60 marks**
+## Overview
+
+This repository contains the solutions for the second coursework assessment of the **Inversion and Optimisation** module. The assessment is divided into two parts, focusing on **Linear Inversion** (steady-state advection-diffusion) and **Non-Linear Inversion** (coupled nonlinear ODEs). The work demonstrates the implementation of numerical methods for solving partial differential equations (PDEs), constructing adjoint models for efficient gradient computation, and utilizing optimization algorithms to solve inverse problems.
+
+## Repository Structure
+
+- `Assessment2_pt1.ipynb`: Part 1 - Linear Inversion (Advection-Diffusion)
+- `Assessment2_pt2.ipynb`: Part 2 - Non-Linear Inversion (Adjoint Method & Optimization)
+- `Instructions.md`: Original coursework instructions.
+- `references.md`: References used during the coursework.
 
 ---
 
-## **Deliverables**
-You must complete the coursework using the provided Jupyter notebooks. **Follow the instructions carefully**:
+## Part 1: Linear Inversion (Advection-Diffusion)
 
-1. **Part 1:** Answer all questions in the notebook named `Assessment2_pt1.ipynb`.  
-   - **Do not** rename or alter the structure of the file.  
-   - Only responses inside this notebook will be marked. 
-   - Follow the **specific** instructions contained in this notebook.
+**Goal:** Solve the steady-state advection-diffusion equation using the Finite Difference Method (FDM) and analyze linear solvers.
 
-2. **Part 2:** Answer all questions in the notebook named `Assessment2_pt2.ipynb`.  
-   - **Do not** rename or alter the structure of the file.  
-   - Only responses inside this notebook will be marked.
-   - Follow the **specific** instructions contained in this notebook.
+### Key Implementations:
+1.  **Discretization**:
+    -   Implemented a linear system $\underline{\mathbf{A}} \mathbf{c} = \mathbf{b}$ representing the PDE.
+    -   Used a **5-point stencil** for the diffusion term and an **upwind scheme** for the advection term to handle stability.
+    -   Applied Dirichlet boundary conditions.
 
-3. If you use **any large language models (LLMs)** as part of your work, upload the relevant scripts used.
-
-4. If you used any **external references** to complete your work, upload these references in a `References.md` file.
-
-<br>
-
-📌 **All cells in your notebooks must be executed with plots and answers clearly visible. Failure to do so will result in your submission not being marked.**
-
-📌 As you might have already learned from the previous modules, **make sure to test your submission early on making sure that you can easily upload your solutions before the deadline**.
+2.  **Linear Solvers**:
+    -   **Direct Solver**: Utilized `scipy.sparse.linalg.spsolve` to obtain the reference solution for the sparse linear system.
+    -   **Iterative Solver Analysis**: Evaluated the suitability of Krylov subspace methods.
+        -   **Conclusion**: Identified **GMRES (Generalized Minimal Residual method)** with restarts as the optimal choice.
+        -   **Reasoning**: The advection term introduces asymmetry to the system matrix $\underline{\mathbf{A}}$, making symmetric solvers like Conjugate Gradient (CG) unsuitable. GMRES effectively handles non-symmetric, indefinite matrices.
 
 ---
 
-## **Support**
-- GTAs will be available for **morning and afternoon sessions from Wednesday to Friday** until the deadline.  
+## Part 2: Non-Linear Inversion (Adjoint Method)
 
-- Support is provided for **clarifications on lecture notes, homework, and coursework prompts or requirements**.  
+**Goal:** Solve an inverse problem for a system of coupled nonlinear ODEs (resembling predator-prey dynamics) to estimate initial conditions $\mathbf{u}^{(0)}$ that result in a specific final observed state $\hat{\mathbf{u}}$.
 
-- **Direct assistance with coursework solutions will not be provided.**  
+### Key Implementations:
+1.  **Forward Model**:
+    -   Implemented a time-stepping scheme to solve the system of coupled nonlinear ODEs over a defined time interval.
 
-- Seek guidance **during office hours**. Support outside office hours is not guaranteed.
+2.  **Adjoint Method**:
+    -   Derived and implemented the **continuous adjoint equations** to efficiently compute the gradient of the objective function $\nabla \hat{f}(\mathbf{u}^{(0)})$.
+    -   The adjoint method allows for gradient computation with a computational cost independent of the number of design variables, making it superior to finite difference methods for large-scale inversion.
 
-## **Integrity Note**  
+3.  **Verification (Taylor Test)**:
+    -   Implemented a **Taylor Test** to rigorously verify the correctness of the computed gradients.
+    -   Confirmed **second-order convergence** of the remainder term, validating the adjoint implementation.
 
-By submitting this coursework, you confirm that all work presented is your own and that any external sources, including support from large language models (LLMs), have been **properly cited**. Failure to provide appropriate attribution constitutes a breach of the university’s academic integrity policies.  
-
-We **reserve the right** to invite students for a short **viva examination** to explain their coursework answers if deemed necessary.  
+4.  **Optimization**:
+    -   Solved the minimization problem: $\min_{\mathbf{u}^{(0)}} \frac{1}{2} \|\mathbf{u}^{(n)} - \hat{\mathbf{u}}\|^2$.
+    -   Utilized `scipy.optimize.minimize` with advanced algorithms:
+        -   **BFGS (Broyden–Fletcher–Goldfarb–Shanno)**: A Quasi-Newton method used for its superlinear convergence and ability to approximate the Hessian.
+        -   **Newton-CG**: Used for its stability and ability to handle non-symmetric positive definite Jacobians.
+    -   **Results**: Successfully recovered the initial conditions. Compared the performance of Adjoint-based gradients vs. Finite Difference gradients, demonstrating the efficiency and scalability of the adjoint approach.
 
 ---
+
+## Technologies & Libraries
+
+-   **Python 3**
+-   **NumPy**: For high-performance vector and matrix operations.
+-   **SciPy**:
+    -   `scipy.sparse`: For handling sparse matrices in Part 1.
+    -   `scipy.sparse.linalg`: For solving linear systems (`spsolve`).
+    -   `scipy.optimize`: For the minimization algorithms (`minimize`, `BFGS`, `Newton-CG`).
+-   **Matplotlib**: For visualizing the concentration fields, convergence plots, and solution trajectories.
+
+## Usage
+
+To run the notebooks:
+
+1.  Ensure you have a Python environment with the required dependencies installed:
+    ```bash
+    pip install numpy scipy matplotlib
+    ```
+2.  Open the notebooks using Jupyter Lab or Jupyter Notebook:
+    ```bash
+    jupyter lab Assessment2_pt1.ipynb
+    jupyter lab Assessment2_pt2.ipynb
+    ```
+3.  Run all cells to execute the code and generate the results.
 
